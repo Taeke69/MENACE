@@ -25,8 +25,8 @@ class State:
         return moves
 
 
-    def play_move(self, position, player):
-        self.state[position] = player
+    def play_move(self, position, mark):
+        self.state[position] = mark
 
     def validate_move(self, move):
         try:
@@ -49,12 +49,6 @@ class State:
         return (player2 if count_x > count_o else player1)
 
     def check_winner(self):
-        # return((self.board[0] != ' ' and ((self.board[0] == self.board[1] == self.board[2]) or
-        #                                     (self.board[0] == self.board[3] == self.board[6]) or
-        #                                     (self.board[0] == self.board[4] == self.board[8])))
-        #         or (self.board[4] != ' ' and (self.board[3] == self.board[4] == self.board[5]) or
-        #                                     (self.board[1] == self.board[4] == self.board[7]) or
-        #                                     (self.board[2] == self.board[4] == self.board[6]))
         for r in range(3):
             if (self.state[r*3] == self.state[r*3+1] == self.state[r*3+2] != ' '):
                 return self.state[r*3]
@@ -79,35 +73,56 @@ class Menace:
         self.moves_played = []
 
     def get_move(self, state, moves):
+        #print('Menace state', state.get_state())
+        state = str(state.get_state())
         if state not in self.known_states:
             new_choice = moves
             self.known_states[state] = new_choice * (len(new_choice) // 2 + 1)
+            print('new situation', self.known_states[state])
             
+        print('known_state', self.known_states[state])
         choices = self.known_states[state]
+        print('choices', choices)
         if len(choices):
             choice = random.choice(choices)
             self.moves_played.append((state, choice))
-            print(self.moves_played)
+            print('moves played', self.moves_played)
         else:
             choice = -1
+        print('choice', choice)
         return choice
 
+    def end_game(self, winner):
+        if (not winner):
+            self.draw_game()
+            return
+        if (winner == self.mark):
+            self.win_game()
+            return
+        else:
+            self.lose_game()
+            return
+
     def win_game(self):
+        print('w')
         for (state, choice) in self.moves_played:
             self.known_states[state].append([choice, choice, choice])
         self.wins += 1
 
     def draw_game(self):
+        print('d')
         for (state, choice) in self.moves_played:
             self.known_states[state].append(choice)
         self.draws += 1
     
     def lose_game(self):
+        print('l')
         for (state, choice) in self.moves_played:
-            print(self.known_states[state])
+            #print(self.known_states[state])
             known_state = self.known_states[state]
+            #print('known_state', known_state)
             del known_state[known_state.index(choice)]
-            print(self.known_states[state])
+            #print(self.known_states[state])
         self.losses += 1
 
 class MonteCarlo:
@@ -135,6 +150,7 @@ class MonteCarlo:
             for score in scores:
                 pass
         else:
+            pass
             
 
 class Player:
@@ -149,6 +165,17 @@ class Player:
         while (not state.validate_move(move)):
             move = input("Invalid move, try again: ")
         return int(move)
+    
+    def end_game(self, winner):
+        if (not winner):
+            print("Draw...")
+            return
+        if (winner == self.mark):
+            print("Congratulations! You won!")
+            return
+        else:
+            print("Lmao, you suck.")
+            return
 
 def play_game(player1, player2):
     state = State()
@@ -160,19 +187,28 @@ def play_game(player1, player2):
         moves = state.get_moves()
         move = current_player.get_move(state, moves)
         state.play_move(move, current_player.mark)
-        if (state.check_winner()):
-            print(state.get_state())
-            print("Congratulations! %s won the round!" % state.check_winner())
-            player2.lose_game()
+        print(state.check_winner())
+        winner = state.check_winner()
+        if (winner or len(moves) - 1 < 1):
+            print('WINNER', winner)
+            player1.end_game(winner)
+            player2.end_game(winner)
             return;
-        if (len(moves) - 1 < 1):
-            print(state.get_state())
-            print("Draw!")
-            return
+        # if (winner):
+        #     player1.end_game()
+        #     player2.end_game()
+        #     print(state.get_state())
+        #     print("Congratulations! %s won the round!" % state.check_winner())
+        #     player2.lose_game()
+        #     return;
+        # if (len(moves) - 1 < 1):
+        #     print(state.get_state())
+        #     print("Draw!")
+        #     return
 
 if __name__ == '__main__':
     player1 = Player('X')
     player2 = Menace('O')
     while True:
-        print("Starting new game: ")
+        print("\n\nStarting new game: ")
         play_game(player1, player2)
