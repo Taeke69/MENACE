@@ -23,7 +23,7 @@ class State:
         for i in range(len(self.state)):
             if self.state[i] == ' ':
                 moves.append(i)
-        print(moves)
+        #print(moves)
         return moves
 
 
@@ -70,6 +70,7 @@ class Menace:
         self.wins = 0
         self.draws = 0
         self.losses = 0
+        
 
     def start_game(self):
         self.moves_played = []
@@ -78,33 +79,52 @@ class Menace:
         #print('Menace state', state.get_state())
         state_s = str(state.get_state())
         if state_s not in self.known_states:
-            new_choice = moves
-            self.known_states[state_s] = new_choice * (len(new_choice) // 2 + 1)
-            print('new situation', self.known_states[state_s])
-            
-        print('known_state', self.known_states[state_s])
-        choices = self.known_states[state_s]
-        print('choices', choices)
-        if len(choices):
-            #choice = random.choice(choices)
-            #choice = minimax(state, choices, self)
+            #new_choice = moves
+
             state_c = state
             bestScore = -2
             bestMove = -1
-            for x in choices:
+            for x in moves:
+                print(x)
                 state_c.play_move(x, self.mark)
                 score = minimax(state_c, state_c.get_moves(), False, 0)
                 state_c.play_move(x, ' ')
                 if (score > bestScore):
                     bestScore = score
                     bestMove = x
+                    print('score', score)
+                    print('x', x)
             
-            choice = bestMove
+            new_choice = bestMove
 
-            self.moves_played.append((state_s, choice))
-            print('moves played', self.moves_played)
-        else:
-            choice = -1
+            self.known_states[state_s] = new_choice
+            #self.known_states[state_s] = new_choice * (len(new_choice) // 2 + 1)
+            print('new situation', self.known_states[state_s])
+            
+        print('known_state', self.known_states[state_s])
+        choices = self.known_states[state_s]
+        print('choices', choices)
+        choice = choices
+        #if len(choices):
+            #choice = random.choice(choices)
+            #choice = minimax(state, choices, self)
+            # state_c = state
+            # bestScore = -2
+            # bestMove = -1
+            # for x in choices:
+            #     state_c.play_move(x, self.mark)
+            #     score = minimax(state_c, state_c.get_moves(), False, 0)
+            #     state_c.play_move(x, ' ')
+            #     if (score > bestScore):
+            #         bestScore = score
+            #         bestMove = x
+            
+            # choice = bestMove
+
+        self.moves_played.append((state_s, choice))
+        print('moves played', self.moves_played)
+        #else:
+            #choice = -1
         print('choice', choice)
         return choice
 
@@ -200,7 +220,7 @@ def minimax(state, moves, isMaxPlayer, depth):
             return -1
         elif not isMaxPlayer:
             return 1
-    if (len(moves) < 1 or depth == 3):
+    if (len(moves) < 1 or depth == 10):
         return 0
 
     if isMaxPlayer:
@@ -211,7 +231,8 @@ def minimax(state, moves, isMaxPlayer, depth):
             state.play_move(move, ' ')
             if (score > bestScore):
                 bestScore = score
-            
+        
+        #print('maxscore', bestScore)
         return bestScore
 
     else:
@@ -222,7 +243,8 @@ def minimax(state, moves, isMaxPlayer, depth):
             state.play_move(move, ' ')
             if (score < bestScore):
                 bestScore = score
-            
+                
+        #print('minscore', score)    
         return bestScore
 
 
@@ -240,8 +262,8 @@ def play_game(player1, player2):
         winner = state.check_winner()
         if (winner or len(moves) - 1 < 1):
             print('WINNER', winner)
-            player1.end_game(winner)
-            player2.end_game(winner)
+            #player1.end_game(winner)
+            #player2.end_game(winner)
             return;
         # if (winner):
         #     player1.end_game()
