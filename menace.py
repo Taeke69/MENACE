@@ -3,8 +3,10 @@ import random
 #from time import sleep
 
 class State:
-    def __init__(self):
+    def __init__(self, player1, player2):
         self.state = [' ',' ',' ',' ',' ',' ',' ',' ',' ']
+        self.player1 = player1
+        self.player2 = player2
 
     def get_state(self):
         return("\n 0 | 1 | 2 \t  %s | %s | %s \n"
@@ -38,15 +40,15 @@ class State:
         else:
             return False
 
-    def get_player(self, player1, player2):
+    def get_player(self):
         count_x = 0
         count_o = 0
         for mark in self.state:
-            if mark == 'X':
+            if mark == self.player1.mark:
                 count_x += 1
-            if mark == 'O':
+            if mark == self.player2.mark:
                 count_o += 1
-        return (player2 if count_x > count_o else player1)
+        return (self.player2 if count_x > count_o else self.player1)
 
     def check_winner(self):
         for r in range(3):
@@ -74,18 +76,32 @@ class Menace:
 
     def get_move(self, state, moves):
         #print('Menace state', state.get_state())
-        state = str(state.get_state())
-        if state not in self.known_states:
+        state_s = str(state.get_state())
+        if state_s not in self.known_states:
             new_choice = moves
-            self.known_states[state] = new_choice * (len(new_choice) // 2 + 1)
-            print('new situation', self.known_states[state])
+            self.known_states[state_s] = new_choice * (len(new_choice) // 2 + 1)
+            print('new situation', self.known_states[state_s])
             
-        print('known_state', self.known_states[state])
-        choices = self.known_states[state]
+        print('known_state', self.known_states[state_s])
+        choices = self.known_states[state_s]
         print('choices', choices)
         if len(choices):
-            choice = random.choice(choices)
-            self.moves_played.append((state, choice))
+            #choice = random.choice(choices)
+            #choice = minimax(state, choices, self)
+            state_c = state
+            bestScore = -2
+            bestMove = -1
+            for x in choices:
+                state_c.play_move(x, self.mark)
+                score = minimax(state_c, state_c.get_moves(), False, 0)
+                state_c.play_move(x, ' ')
+                if (score > bestScore):
+                    bestScore = score
+                    bestMove = x
+            
+            choice = bestMove
+
+            self.moves_played.append((state_s, choice))
             print('moves played', self.moves_played)
         else:
             choice = -1
@@ -177,13 +193,46 @@ class Player:
             print("Lmao, you suck.")
             return
 
+def minimax(state, moves, isMaxPlayer, depth):
+    winner = state.check_winner()
+    if (winner):
+        if isMaxPlayer:
+            return -1
+        elif not isMaxPlayer:
+            return 1
+    if (len(moves) < 1 or depth == 3):
+        return 0
+
+    if isMaxPlayer:
+        bestScore = -2
+        for move in moves:
+            state.play_move(move, state.get_player().mark)
+            score = minimax(state, state.get_moves(), False, depth+1)
+            state.play_move(move, ' ')
+            if (score > bestScore):
+                bestScore = score
+            
+        return bestScore
+
+    else:
+        bestScore = 2
+        for move in moves:
+            state.play_move(move, state.get_player().mark)
+            score = minimax(state, state.get_moves(), True, depth+1)
+            state.play_move(move, ' ')
+            if (score < bestScore):
+                bestScore = score
+            
+        return bestScore
+
+
 def play_game(player1, player2):
-    state = State()
+    state = State(player1, player2)
     player1.start_game()
     player2.start_game()
     while True:
         print(state.get_state())
-        current_player = state.get_player(player1, player2)
+        current_player = state.get_player()
         moves = state.get_moves()
         move = current_player.get_move(state, moves)
         state.play_move(move, current_player.mark)
@@ -212,3 +261,5 @@ if __name__ == '__main__':
     while True:
         print("\n\nStarting new game: ")
         play_game(player1, player2)
+        print("\n\nStarting new game: ")
+        play_game(player2, player1)
