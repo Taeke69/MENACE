@@ -78,6 +78,19 @@ class Menace:
     def get_move(self, state, moves):
         #print('Menace state', state.get_state())
         state_s = str(state.get_state())
+
+        # board rotations
+        # [0,1,2,3,4,5,6,7,8] rotation 0
+        # [0,3,6,1,4,7,2,5,8] rotation 1
+        # [2,5,8,1,4,7,0,3,6] rotation 2
+        # [2,1,0,5,4,3,8,7,6] rotation 3
+        # [8,7,6,5,4,3,2,1,0] rotation 4
+        # [8,5,2,7,4,1,6,3,0] rotation 5
+        # [6,3,0,7,4,1,8,5,2] rotation 6
+        # [6,7,8,3,4,5,0,1,2] rotation 7
+
+
+
         if state_s not in self.known_states:
             #new_choice = moves
 
@@ -125,7 +138,10 @@ class Menace:
             #         bestMove = x
             
             # choice = bestMove
-
+        else:
+            del self.known_states[state_s]
+            choice = self.get_move(state, state.get_moves())
+            print('choices [no choices]')
         self.moves_played.append((state_s, choice))
         print('moves played', self.moves_played)
         #else:
@@ -224,11 +240,11 @@ def minimax(state, moves, isMaxPlayer, depth):
     winner = state.check_winner()
     if (winner):
         if isMaxPlayer:
-            return 1
-        elif not isMaxPlayer:
             return -1
+        elif not isMaxPlayer:
+            return 1
     if (len(moves) < 1 or depth == 10):
-        return -10
+        return 0
 
     if isMaxPlayer:
         bestScore = -2
@@ -285,8 +301,14 @@ def play_game(player1, player2):
         #     return
 
 if __name__ == '__main__':
-    player1 = Player('X')
+    player1 = Menace('X')
     player2 = Menace('O')
+    # count = 0
+    # while count < 500:
+    #     play_game(player1, player2)
+    #     play_game(player2, player1)
+    #     count += 1
+    # player1 = Player('X')
     while True:
         print("\n\nStarting new game: ")
         play_game(player1, player2)
