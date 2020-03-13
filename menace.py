@@ -83,15 +83,20 @@ class Menace:
 
             state_c = state
             bestScore = -2
-            bestMove = -1
+            bestMove = []
             for x in moves:
                 print(x)
                 state_c.play_move(x, self.mark)
                 score = minimax(state_c, state_c.get_moves(), False, 0)
                 state_c.play_move(x, ' ')
-                if (score > bestScore):
+                if (score == bestScore):
                     bestScore = score
-                    bestMove = x
+                    #bestMove = x
+                    bestMove.append(x)
+                elif (score > bestScore):
+                    del bestMove[:]
+                    bestScore = score
+                    bestMove.append(x)
                     print('score', score)
                     print('x', x)
             
@@ -105,8 +110,8 @@ class Menace:
         choices = self.known_states[state_s]
         print('choices', choices)
         choice = choices
-        #if len(choices):
-            #choice = random.choice(choices)
+        if len(choices):
+            choice = random.choice(choices)
             #choice = minimax(state, choices, self)
             # state_c = state
             # bestScore = -2
@@ -142,22 +147,24 @@ class Menace:
     def win_game(self):
         print('w')
         for (state, choice) in self.moves_played:
-            self.known_states[state].append([choice, choice, choice])
+            #self.known_states[state].append([choice, choice, choice])
+            self.known_states[state].append(choice)
         self.wins += 1
 
     def draw_game(self):
         print('d')
-        for (state, choice) in self.moves_played:
-            self.known_states[state].append(choice)
+        # for (state, choice) in self.moves_played:
+        #     self.known_states[state].append(choice)
         self.draws += 1
     
     def lose_game(self):
         print('l')
         for (state, choice) in self.moves_played:
             #print(self.known_states[state])
-            known_state = self.known_states[state]
+            #known_state = self.known_states[state]
             #print('known_state', known_state)
-            del known_state[known_state.index(choice)]
+            del self.known_states[state][self.known_states[state].index(choice)]
+            #del known_state[known_state.index(choice)]
             #print(self.known_states[state])
         self.losses += 1
 
@@ -217,11 +224,11 @@ def minimax(state, moves, isMaxPlayer, depth):
     winner = state.check_winner()
     if (winner):
         if isMaxPlayer:
-            return -1
-        elif not isMaxPlayer:
             return 1
+        elif not isMaxPlayer:
+            return -1
     if (len(moves) < 1 or depth == 10):
-        return 0
+        return -10
 
     if isMaxPlayer:
         bestScore = -2
@@ -262,8 +269,8 @@ def play_game(player1, player2):
         winner = state.check_winner()
         if (winner or len(moves) - 1 < 1):
             print('WINNER', winner)
-            #player1.end_game(winner)
-            #player2.end_game(winner)
+            player1.end_game(winner)
+            player2.end_game(winner)
             return;
         # if (winner):
         #     player1.end_game()
