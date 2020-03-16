@@ -7,6 +7,16 @@ class State:
         self.state = [' ',' ',' ',' ',' ',' ',' ',' ',' ']
         self.player1 = player1
         self.player2 = player2
+        self.rotations = [
+            [0,1,2,3,4,5,6,7,8],
+            [0,3,6,1,4,7,2,5,8],
+            [2,5,8,1,4,7,0,3,6],
+            [2,1,0,5,4,3,8,7,6],
+            [8,7,6,5,4,3,2,1,0],
+            [8,5,2,7,4,1,6,3,0],
+            [6,3,0,7,4,1,8,5,2],
+            [6,7,8,3,4,5,0,1,2]
+        ]
 
     def get_state(self):
         return("\n 0 | 1 | 2 \t  %s | %s | %s \n"
@@ -18,14 +28,15 @@ class State:
                 self.state[3], self.state[4], self.state[5],
                 self.state[6], self.state[7], self.state[8]))
 
+    def get_string(self):
+        return str(self.state)
+
     def get_moves(self):
         moves = []
         for i in range(len(self.state)):
             if self.state[i] == ' ':
                 moves.append(i)
-        #print(moves)
         return moves
-
 
     def play_move(self, position, mark):
         self.state[position] = mark
@@ -50,17 +61,29 @@ class State:
                 count_o += 1
         return (self.player2 if count_x > count_o else self.player1)
 
+    def get_rotations(self):
+        state_rotations = []
+        for rotation in self.rotations:
+            x = []
+            for i in rotation:
+                x.append(self.state[i])
+            state_rotations.append(str(x))
+        return state_rotations
+
+    def unrotate_move(self, rotation, move):
+        return self.rotations[rotation][move]
+
     def check_winner(self):
         for r in range(3):
             if (self.state[r*3] == self.state[r*3+1] == self.state[r*3+2] != ' '):
-                return self.state[r*3]
+                return self.player1 if self.player1.mark == self.state[r*3] else self.player2
         for c in range(3):
             if (self.state[0+c] == self.state[3+c] == self.state[6+c] != ' '):
-                return self.state[0+c]
+                return self.player1 if self.player1.mark == self.state[0+c] else self.player2
         if (self.state[0] == self.state[4] == self.state[8] != ' '):
-            return self.state[0]
+            return self.player1 if self.player1.mark == self.state[0] else self.player2
         if (self.state[2] == self.state[4] == self.state[6] != ' '):
-            return self.state[2]
+            return self.player1 if self.player1.mark == self.state[2] else self.player2
         return False
 
 class Menace:
@@ -76,8 +99,7 @@ class Menace:
         self.moves_played = []
 
     def get_move(self, state, moves):
-        #print('Menace state', state.get_state())
-        state_s = str(state.get_state())
+        state_s = state.get_string()
 
         # board rotations
         # [0,1,2,3,4,5,6,7,8] rotation 0
@@ -89,11 +111,17 @@ class Menace:
         # [6,3,0,7,4,1,8,5,2] rotation 6
         # [6,7,8,3,4,5,0,1,2] rotation 7
 
+        rotations = state.get_rotations()
+        known_rotations = [rotation in self.known_states for rotation in rotations]
 
+        rotation_index = -1
 
-        if state_s not in self.known_states:
-            #new_choice = moves
+        for i in range(len(known_rotations)):
+            if known_rotations[i]:
+                rotation_index = i
 
+        if rotation_index == -1:
+            rotation_index = 0
             state_c = state
             bestScore = -2
             bestMove = []
@@ -116,44 +144,28 @@ class Menace:
             new_choice = bestMove
 
             self.known_states[state_s] = new_choice
-            #self.known_states[state_s] = new_choice * (len(new_choice) // 2 + 1)
             print('new situation', self.known_states[state_s])
-            
-        print('known_state', self.known_states[state_s])
-        choices = self.known_states[state_s]
+
+        state_r = rotations[rotation_index]
+        print('known_state', self.known_states[state_r])
+        choices = self.known_states[state_r]
         print('choices', choices)
         choice = choices
         if len(choices):
             choice = random.choice(choices)
-            #choice = minimax(state, choices, self)
-            # state_c = state
-            # bestScore = -2
-            # bestMove = -1
-            # for x in choices:
-            #     state_c.play_move(x, self.mark)
-            #     score = minimax(state_c, state_c.get_moves(), False, 0)
-            #     state_c.play_move(x, ' ')
-            #     if (score > bestScore):
-            #         bestScore = score
-            #         bestMove = x
-            
-            # choice = bestMove
         else:
-            del self.known_states[state_s]
+            del self.known_states[state_r]
             choice = self.get_move(state, state.get_moves())
-            print('choices [no choices]')
-        self.moves_played.append((state_s, choice))
-        print('moves played', self.moves_played)
-        #else:
-            #choice = -1
-        print('choice', choice)
+        self.moves_played.append((state_r, choice))
+        choice = state.unrotate_move(rotation_index, choice)
+
         return choice
 
     def end_game(self, winner):
         if (not winner):
             self.draw_game()
             return
-        if (winner == self.mark):
+        if (winner == self):
             self.win_game()
             return
         else:
@@ -169,48 +181,27 @@ class Menace:
 
     def draw_game(self):
         print('d')
-        # for (state, choice) in self.moves_played:
-        #     self.known_states[state].append(choice)
         self.draws += 1
     
     def lose_game(self):
         print('l')
         for (state, choice) in self.moves_played:
-            #print(self.known_states[state])
-            #known_state = self.known_states[state]
-            #print('known_state', known_state)
             del self.known_states[state][self.known_states[state].index(choice)]
-            #del known_state[known_state.index(choice)]
-            #print(self.known_states[state])
         self.losses += 1
 
-class MonteCarlo:
+class Random:
     def __init__(self, mark):
         self.mark = mark
-
+    
     def start_game(self):
         pass
 
     def get_move(self, state, moves):
+        move = random.choice(moves)
         return move
-
-    def mc_trial(self, state, player, moves):
-        while True:
-            current_player = state.get_player(player1, player2)
-            moves = state.get_moves()
-            random_choice = random.choice(moves)
-            state.play_move(random_choice, current_player.mark)
-
-            if (state.check_winner() or len(moves - 1 < 1)):
-                return
-
-    def mc_update_scores(self, scores, board, player):
-        if (not state.check_winner()):
-            for score in scores:
-                pass
-        else:
-            pass
-            
+    
+    def end_game(self, winner):
+        pass
 
 class Player:
     def __init__(self, mark):
@@ -229,7 +220,7 @@ class Player:
         if (not winner):
             print("Draw...")
             return
-        if (winner == self.mark):
+        if (winner == self):
             print("Congratulations! You won!")
             return
         else:
@@ -255,7 +246,6 @@ def minimax(state, moves, isMaxPlayer, depth):
             if (score > bestScore):
                 bestScore = score
         
-        #print('maxscore', bestScore)
         return bestScore
 
     else:
@@ -266,8 +256,7 @@ def minimax(state, moves, isMaxPlayer, depth):
             state.play_move(move, ' ')
             if (score < bestScore):
                 bestScore = score
-                
-        #print('minscore', score)    
+                  
         return bestScore
 
 
@@ -281,34 +270,21 @@ def play_game(player1, player2):
         moves = state.get_moves()
         move = current_player.get_move(state, moves)
         state.play_move(move, current_player.mark)
-        print(state.check_winner())
         winner = state.check_winner()
         if (winner or len(moves) - 1 < 1):
-            print('WINNER', winner)
             player1.end_game(winner)
             player2.end_game(winner)
-            return;
-        # if (winner):
-        #     player1.end_game()
-        #     player2.end_game()
-        #     print(state.get_state())
-        #     print("Congratulations! %s won the round!" % state.check_winner())
-        #     player2.lose_game()
-        #     return;
-        # if (len(moves) - 1 < 1):
-        #     print(state.get_state())
-        #     print("Draw!")
-        #     return
+            return
 
 if __name__ == '__main__':
-    player1 = Menace('X')
+    player1 = Random('X')
     player2 = Menace('O')
-    # count = 0
-    # while count < 500:
-    #     play_game(player1, player2)
-    #     play_game(player2, player1)
-    #     count += 1
-    # player1 = Player('X')
+    count = 0
+    while count < 500:
+        play_game(player1, player2)
+        play_game(player2, player1)
+        count += 1
+    player1 = Player('X')
     while True:
         print("\n\nStarting new game: ")
         play_game(player1, player2)
