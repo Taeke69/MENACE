@@ -1,6 +1,4 @@
-#import numpy as np
 import random
-#from time import sleep
 
 class State:
     # Het spel wordt aangemaakt
@@ -51,6 +49,8 @@ class State:
 
     # Controleren of de zet die wordt gekozen valide is
     def validate_move(self, move):
+        if move == 'q':
+            quit()
         try:
             move = int(move)
         except ValueError:
@@ -121,15 +121,15 @@ class Menace:
         # Opslaan van toestand als string
         state_s = state.get_string()
 
-        # board rotations
-        # [0,1,2,3,4,5,6,7,8] rotation 0
-        # [0,3,6,1,4,7,2,5,8] rotation 1
-        # [2,5,8,1,4,7,0,3,6] rotation 2
-        # [2,1,0,5,4,3,8,7,6] rotation 3
-        # [8,7,6,5,4,3,2,1,0] rotation 4
-        # [8,5,2,7,4,1,6,3,0] rotation 5
-        # [6,3,0,7,4,1,8,5,2] rotation 6
-        # [6,7,8,3,4,5,0,1,2] rotation 7
+        # rotaties:
+        # 0 [0,1,2,3,4,5,6,7,8]
+        # 1 [0,3,6,1,4,7,2,5,8]
+        # 2 [2,5,8,1,4,7,0,3,6]
+        # 3 [2,1,0,5,4,3,8,7,6]
+        # 4 [8,7,6,5,4,3,2,1,0]
+        # 5 [8,5,2,7,4,1,6,3,0]
+        # 6 [6,3,0,7,4,1,8,5,2]
+        # 7 [6,7,8,3,4,5,0,1,2]
         # Rotaties worden opgehaald
         rotations = state.get_rotations()
         # Controleren of één van de rotaties al aanwezig is in de bekende toestanden
@@ -153,11 +153,10 @@ class Menace:
             bestScore = -2
             bestMove = []
             for x in moves:
-                print(x)
                 # Spelen van zet op dummy toestand
                 state_c.play_move(x, self.mark)
                 # Ophalen van score uit het minimax algoritme
-                score = minimax(state_c, state_c.get_moves(), False, 0)
+                score = minimax(state_c, state_c.get_moves(), False)
                 # Terugzetten van toestand naar toestand voor de zet
                 state_c.play_move(x, ' ')
                 # Bij gelijke score -> zet toevoegen aan variabele
@@ -168,19 +167,14 @@ class Menace:
                     del bestMove[:]
                     bestScore = score
                     bestMove.append(x)
-                    print('score', score)
-                    print('x', x)
             
             # De beste zetten met de toestand opslaan in variabele
             self.known_states[state_s] = bestMove
-            print('new situation', self.known_states[state_s])
 
         # Opslaan van staat voor bekende rotatie
         state_r = rotations[rotation_index]
-        print('known_state', self.known_states[state_r])
         # Opslaan van zetten voor bekende rotatie
         choices = self.known_states[state_r]
-        print('choices', choices)
         # Als er zetten aanwezig zijn -> Kiezen van willekeurige zet
         if len(choices):
             choice = random.choice(choices)
@@ -199,32 +193,28 @@ class Menace:
     def end_game(self, winner):
         if (not winner):
             self.draw_game()
-            return
-        if (winner == self):
+        elif (winner == self):
             self.win_game()
-            return
         else:
             self.lose_game()
-            return
+        print("Menace - wins:draws:losses: ", self.wins, self.draws, self.losses)
 
     # Toevoegen van zet aan variabele bij winst
     def win_game(self):
-        print('w')
         for (state, choice) in self.moves_played:
-            self.known_states[state].append(choice)
-        self.wins += 1
+            if len(self.known_states[state]) > 1:
+                self.known_states[state].append(choice)
+        self.wins += 1       
 
     # Geen actie ondernemen bij gelijkspel
     def draw_game(self):
-        print('d')
         self.draws += 1
-    
+           
     # Verwijderen van zet uit variabele bij verlies
     def lose_game(self):
-        print('l')
         for (state, choice) in self.moves_played:
             del self.known_states[state][self.known_states[state].index(choice)]
-        self.losses += 1
+        self.losses += 1       
 
 class Human:
     # Menselijke speler wordt aangemaakt
@@ -242,17 +232,14 @@ class Human:
     
     def end_game(self, winner):
         if (not winner):
-            print("Draw...")
-            return
-        if (winner == self):
+            print("Draw.")
+        elif (winner == self):
             print("Congratulations! You won!")
-            return
         else:
-            print("Lmao, you suck.")
-            return
+            print("You lost.")
 
 # Minimax algoritme voor het achterhalen van de beste zet
-def minimax(state, moves, isMaxPlayer, depth):
+def minimax(state, moves, isMaxPlayer):
     # Controleren of er een winnaar is:
     # Is er een winnaar en MaxPlayer is aan de beurt -> MaxPlayer verliest -> -1
     # Is er een winnaar en Maxplayer is niet aan de beurt -> MaxPlayer wint -> 1
@@ -263,7 +250,7 @@ def minimax(state, moves, isMaxPlayer, depth):
             return -1
         elif not isMaxPlayer:
             return 1
-    if (len(moves) < 1 or depth == 10):
+    if (len(moves) < 1):
         return 0
 
     # Als MaxPlayer aan de beurt is -> hoogste score teruggeven
@@ -271,8 +258,8 @@ def minimax(state, moves, isMaxPlayer, depth):
         bestScore = -2
         for move in moves:
             state.play_move(move, state.get_player().mark)
-            score = minimax(state, state.get_moves(), False, depth+1)
-            state.play_move(move, ' ')
+            score = minimax(state, state.get_moves(), False)
+            state.play_move(move, ' ') # Zet ongedaan maken
             if (score > bestScore):
                 bestScore = score
         
@@ -282,7 +269,7 @@ def minimax(state, moves, isMaxPlayer, depth):
         bestScore = 2
         for move in moves:
             state.play_move(move, state.get_player().mark)
-            score = minimax(state, state.get_moves(), True, depth+1)
+            score = minimax(state, state.get_moves(), True)
             state.play_move(move, ' ')
             if (score < bestScore):
                 bestScore = score
@@ -296,8 +283,8 @@ def play_game(player1, player2):
     player1.start_game()
     player2.start_game()
     # Verloop van het spel in een while loop
-    while True:
-        print(state.get_state())
+    while True:      
+        print(state.get_state()) # Laten zien van de toestand van het spel
         current_player = state.get_player()
         moves = state.get_moves()
         move = current_player.get_move(state, moves)
@@ -316,7 +303,7 @@ if __name__ == '__main__':
     player2 = Menace('O')
     # Starten van spel met spelers (om de beurt beginnen)
     while True:
-        print("\n\nStarting new game: ")
+        print("\n\nStarting new game (q to quit): ")
         play_game(player1, player2)
-        print("\n\nStarting new game: ")
+        print("\n\nStarting new game (q to quit): ")
         play_game(player2, player1)
